@@ -216,6 +216,7 @@ public class Server {
 					}
 					else{
 						writeMsg("Not logged in");
+						//test
 					}
 					break;
 				case ChatMessage.IDEN:
