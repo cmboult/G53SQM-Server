@@ -149,7 +149,7 @@ public class Server {
 		// the Username of the Client
 		String username;
 		// the only type of message a will receive
-		ChatMessage cm = new ChatMessage();
+		ChatMessage cm;
 		// the date I connect
 		String date;
 		//if I am logged
@@ -237,13 +237,13 @@ public class Server {
 					}
 				}
 			}
-			// remove myself from the arrayList containing the list of the
+			// remove client from the arrayList containing the list of the
 			// connected Clients
 			remove(id);
 			close();
 		}
 		
-		// try to close everything
+		// close everything 
 		private void close() {
 			// try to close the connection
 			try {
