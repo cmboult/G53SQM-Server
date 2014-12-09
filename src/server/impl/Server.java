@@ -107,18 +107,13 @@ public class Server {
 	 *  to broadcast a message to all Clients
 	 */
 	private synchronized void broadcast(String message) {
-		// add HH:mm:ss and \n to the message
-		String time = sdf.format(new Date());
-		String messageLf = time + " " + message + "\n";
-		// display message on console
-			System.out.print(messageLf);
 		
 		// we loop in reverse order in case we would have to remove a Client
 		// because it has disconnected
 		for(int i = al.size(); --i >= 0;) {
 			ClientThread ct = al.get(i);
 			// try to write to the Client if it fails remove it from the list
-			if(!ct.writeMsg(messageLf)) {
+			if(!ct.writeMsg(message)) {
 				al.remove(i);
 				display("Disconnected Client " + ct.username + " removed from list.");
 			}
@@ -174,9 +169,8 @@ public class Server {
 			}
 		}
 
-		// what will run forever
 		public void run() {
-			// to loop until LOGOUT
+			// Loop until QUIT
 			boolean keepGoing = true;
 			while(keepGoing) {
 				// read a String (which is an object)
@@ -190,52 +184,88 @@ public class Server {
 				catch(ClassNotFoundException e2) {
 					break;
 				}
-				// the messaage part of the ChatMessage
-				String message = cm.getMessage();
 
 				// Switch on the type of message receive
 				switch(cm.getType()) {
 
 				case ChatMessage.MESSAGE:
-					broadcast(username + ": " + message);
+					if(loggedIn){	
+						for(ClientThread thread : al){
+							if(thread.username.equalsIgnoreCase(cm.getParam())){
+								if(thread.writeMsg(username + ": " + cm.getMessage())){
+									writeMsg("Message sent.");
+								}
+								break;
+							}
+						}	
+						writeMsg("User: " + cm.getParam() + " does not exist.");
+					}
+					else{
+						writeMsg("Error! User not logged in");
+					}
 					break;
-				case ChatMessage.LOGOUT:
-					display(username + " disconnected with a LOGOUT message.");
+					
+				case ChatMessage.QUIT:
+					writeMsg(username + " disconnected.");
 					keepGoing = false;
 					break;
+					
 				case ChatMessage.STAT:
-					writeMsg("List of the users connected at " + sdf.format(new Date()) + "\n");
-					// scan all the users connected
-					for(int i = 0; i < al.size(); ++i) {
-						ClientThread ct = al.get(i);
-						writeMsg((i+1) + ") " + ct.username + " since " + ct.date + "\n");
-					}
+					writeMsg("There are " + al.size() + " users currently logged in.\n");
 					writeMsg("Current session status: ");
 					if(loggedIn){
 						writeMsg("Logged in since " + this.date);
 					}
 					else{
 						writeMsg("Not logged in");
-						//test
 					}
 					break;
+					
+				case ChatMessage.LIST:
+					if(loggedIn){
+						writeMsg("List of the users connected at " + sdf.format(new Date()) + "\n");
+						// scan all the users connected
+						for(int i = 0; i < al.size(); ++i) {
+							ClientThread ct = al.get(i);
+							writeMsg((i+1) + ") " + ct.username + " since " + ct.date + "\n");
+						}	
+					}
+					else{
+						writeMsg("Error! User not logged in");
+					}
+					break;
+					
 				case ChatMessage.IDEN:
+					if(loggedIn){
+						writeMsg("Already logged in");
+						break;
+					}
 					boolean usernameExists = false;
 					for(int i = 0; i < al.size(); ++i) {
 						ClientThread ct = al.get(i);
-						if(message.equals(ct.username))
+						if(cm.getParam().equals(ct.username))
 							usernameExists = true;
 					}
 					if(usernameExists){
-						writeMsg("Error! User " + message + " already exists");
+						writeMsg("Error! User " + cm.getParam() + " already exists.");
 					}
 					else{
 						this.loggedIn = true;
-						this.username = message;
+						this.username = cm.getParam();
 						writeMsg("Welcome " + username);
 						date = new Date().toString() + "\n";
 					}
+					break;
+					
+				case ChatMessage.HAIL:
+					if(loggedIn){
+						broadcast(username + ": " + cm.getMessage());
+					}
+					else{
+						writeMsg("Error! User not logged in.");
+					}
 				}
+					
 			}
 			// remove client from the arrayList containing the list of the
 			// connected Clients
@@ -275,8 +305,8 @@ public class Server {
 			}
 			// if an error occurs, do not abort just inform the user
 			catch(IOException e) {
-				display("Error sending message to " + username);
-				display(e.toString());
+				writeMsg("Error sending message to " + username);
+				writeMsg(e.toString());
 			}
 			return true;
 		}
