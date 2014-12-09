@@ -1,40 +1,36 @@
-package chat;
-
 import java.awt.EventQueue;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.JButton;
 
+import server.ChatMessage;
+
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.awt.Color;
+import java.net.*;
+import java.util.*;
+import java.io.*;
 
 
 public class ChatInterface {
 
-	private JFrame frame;
+	public JFrame frame;
 	private JTextField usernameTextField;
 	private JTextField passwordTextField;
 	private JTextField OutgoingMessages;
-	private JTextField incomingMessages;
+	private JTextArea incomingMessages;
+	private JTextField textField_1;
+	private JTextField textField;
 
-	String username;
-	String password;
-	Socket socket;
-	BufferedReader breader;
-	PrintWriter writer;
+	private String username;
+	private Socket socket;
+	ObjectInputStream breader;
+	ObjectOutputStream writer;
 	ArrayList<String> userList = new ArrayList<String>();
 	Boolean isConnected = false;
-	
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					ChatInterface window = new ChatInterface();
-					window.frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
 
 	/**
 	 * Create the application.
@@ -62,12 +58,30 @@ public class ChatInterface {
 		frame.getContentPane().add(usernameTextField);
 		usernameTextField.setColumns(10);
 		
-		incomingMessages = new JTextField();
-		incomingMessages.setBounds(175, 25, 297, 173);
+		incomingMessages = new JTextArea();
+		incomingMessages.setBounds(175, 26, 297, 83);
 		frame.getContentPane().add(incomingMessages);
 		incomingMessages.setColumns(10);
 		
-		 final JLabel lblSignedInAs = new JLabel("Signed in as");
+		textField_1 = new JTextField();
+		textField_1.setBounds(175, 133, 297, 28);
+		frame.getContentPane().add(textField_1);
+		textField_1.setColumns(10);
+		
+		JLabel lblType_1 = new JLabel("Type:");
+		lblType_1.setBounds(175, 115, 61, 16);
+		frame.getContentPane().add(lblType_1);
+		
+		JLabel lblParameter = new JLabel("Parameter:");
+		lblParameter.setBounds(175, 173, 73, 16);
+		frame.getContentPane().add(lblParameter);
+		
+		textField = new JTextField();
+		textField.setBounds(175, 189, 297, 28);
+		frame.getContentPane().add(textField);
+		textField.setColumns(10);
+		
+		final JLabel lblSignedInAs = new JLabel("Signed in as");
 		lblSignedInAs.setBounds(6, 143, 114, 46);
 		frame.getContentPane().add(lblSignedInAs);
 		
@@ -77,7 +91,6 @@ public class ChatInterface {
 								
 				if (isConnected == false) {
 				username = usernameTextField.getText();	
-				password = passwordTextField.getText();
 				
 				usernameTextField.setEditable(false);
 				passwordTextField.setEditable(false);
@@ -85,12 +98,13 @@ public class ChatInterface {
 				lblSignedInAs.setText("Signed in as " +username);
 				
 				try {
-					socket = new Socket("192.168.0.11", 21); //IP Address and port number 
+					socket = new Socket("localhost", 1500); //IP Address and port number 
 					InputStreamReader streamReader = new InputStreamReader(socket.getInputStream());
-					breader = new BufferedReader(streamReader);
-					writer = new PrintWriter(socket.getOutputStream()); 
-					//writer.println(username + "Has connected ");
-					System.out.print(username + "Has connected ");
+					breader = new ObjectInputStream(socket.getInputStream());
+					//writer = new PrintWriter(socket.getOutputStream()); 
+					writer = new ObjectOutputStream(socket.getOutputStream());
+					writer.writeObject(new ChatMessage(3, username, null));
+					System.out.println(username + "Has connected ");
 					writer.flush();
 					isConnected = true;
 				}
@@ -119,7 +133,7 @@ public class ChatInterface {
 		frame.getContentPane().add(lblPassword);
 		
 		OutgoingMessages = new JTextField();
-		OutgoingMessages.setBounds(175, 223, 297, 200);
+		OutgoingMessages.setBounds(175, 257, 297, 146);
 		frame.getContentPane().add(OutgoingMessages);
 		OutgoingMessages.setColumns(10);
 		
@@ -130,6 +144,47 @@ public class ChatInterface {
 		JButton sendMessage = new JButton("Send");
 		sendMessage.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
+				System.out.println("test");
+				
+				// TODO add your handling code here:
+		        String nothing = "";
+		        if ((OutgoingMessages.getText()).equals(nothing)) {
+		        	OutgoingMessages.setText("");
+		        	OutgoingMessages.requestFocus();
+		        } 
+		        
+		        	try {
+		            	int type = 1;
+		            	if(textField_1.getText().equalsIgnoreCase("LIST")){
+		            		type = 4;
+		            	}
+		            	if(textField_1.getText().equalsIgnoreCase("MESSAGE")){
+		            		type = 1;
+		            	}
+		            	if(textField_1.getText().equalsIgnoreCase("HAIL")){
+		            		type = 5;
+		            	}
+		            	if(textField_1.getText().equalsIgnoreCase("QUIT")){
+		            		type = 2;
+		            	}
+		            	if(textField_1.getText().equalsIgnoreCase("STAT")){
+		            		type = 0;
+		            	}
+		            	System.out.println("sending message");
+		            	writer.writeObject(new ChatMessage(type, 
+		            			textField.getText().toString(), 
+		            			OutgoingMessages.getText().toString()));
+		            	
+		            } catch (Exception ex) {
+		                System.out.println("Message was not sent. \n");
+		            }
+		            OutgoingMessages.setText("");
+		            OutgoingMessages.requestFocus();
+		        
+
+		        OutgoingMessages.setText("");
+		        OutgoingMessages.requestFocus();
+				
 			}
 		});
 		sendMessage.setBounds(484, 354, 87, 69);
@@ -146,7 +201,7 @@ public class ChatInterface {
 		frame.getContentPane().add(OnlineContacts);
 		
 		JLabel lblOutgoingMessages = new JLabel("Outgoing Messages:");
-		lblOutgoingMessages.setBounds(185, 201, 155, 16);
+		lblOutgoingMessages.setBounds(175, 241, 155, 16);
 		frame.getContentPane().add(lblOutgoingMessages);
 	}
 	
@@ -154,30 +209,19 @@ public class ChatInterface {
 
 		@Override
 	public void run() {
-			String stream;
-			String[] data;
-			String done = "Done", connect = "Connect", disconnect = "Disconnect", chat = "Chat";
+
 			
-			try {
-				while ((stream = breader.readLine()) != null) {
-				data = stream.split("Y");
-				
-				if(data[2].equals(chat)){
-					System.out.println(data[0] + ":" + data[1] + "\n");			
+			while(true){
+				try{
+					String msg = (String) breader.readObject();
+					incomingMessages.append(msg);
 				}
-				else if (data[2].equals(connect)){
-					userAdd(data[0]);
+				catch(IOException e){
+					System.out.println(e);
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
-				else if (data[2].equals(disconnect)){
-					userRemove(data[0]);
-				} 
-				else if (data[2].equals(done)) {
-					//clear user list
-				}
-			}
-		}
-		catch (Exception e) {
-				
 			}
 			
 	}
@@ -208,10 +252,9 @@ public class ChatInterface {
 	}
 
 	public void sendDisconnect() {
-
-	       String bye = (username + ": :Disconnect");
+		
 	        try{
-	            writer.println(bye); // Sends server the disconnect signal.
+	            writer.writeObject(new ChatMessage(2, null, null)); // Sends server the disconnect signal.
 	            writer.flush(); // flushes the buffer
 	        } catch (Exception e) {
 	            System.out.println("Could not send Disconnect message.\n");
@@ -231,27 +274,7 @@ public class ChatInterface {
        // usersList.setText("");
 
       }
-
-    private void sendButtonActionPerformed(java.awt.event.ActionEvent evt) {                                           
-        // TODO add your handling code here:
-        String nothing = "";
-        if ((OutgoingMessages.getText()).equals(nothing)) {
-        	OutgoingMessages.setText("");
-        	OutgoingMessages.requestFocus();
-        } else {
-            try {
-               writer.println(username + ":" + OutgoingMessages.getText() + ":" + "Chat");
-               writer.flush(); // flushes the buffer
-            } catch (Exception ex) {
-                System.out.println("Message was not sent. \n");
-            }
-            OutgoingMessages.setText("");
-            OutgoingMessages.requestFocus();
-        }
-
-        OutgoingMessages.setText("");
-        OutgoingMessages.requestFocus();
-    }                                  
+                             
 }
 
 
