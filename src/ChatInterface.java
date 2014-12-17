@@ -22,6 +22,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.Choice;
 import javax.swing.JComboBox;
 
+import server.ChatMessage;
+
 
 public class ChatInterface extends JFrame {
 
@@ -34,6 +36,7 @@ public class ChatInterface extends JFrame {
 	private JTextField paramTextField;
 	private JTextArea incomingTextArea;
 	private JComboBox typeComboBox;
+	private boolean listener;
 
 	String username;
 	Socket socket;	
@@ -106,7 +109,6 @@ public class ChatInterface extends JFrame {
 					
 					try {
 						socket = new Socket("localhost", 1500); //IP Address and port number "localhost", 1500
-						InputStreamReader streamReader = new InputStreamReader(socket.getInputStream());
 						breader = new ObjectInputStream(socket.getInputStream());
 						writer = new ObjectOutputStream(socket.getOutputStream());
 						writer.writeObject(new ChatMessage(3, username, null));
@@ -117,6 +119,7 @@ public class ChatInterface extends JFrame {
 					catch (Exception e) {
 						System.out.println("Cannot connect try again.\n");
 					}
+					listener = true;
 	            	ListenThread();
 					}
 					else if (isConnected == true) {
@@ -190,13 +193,17 @@ public class ChatInterface extends JFrame {
 						            	}
 						            	if(typeComboBox.getSelectedItem().toString().equalsIgnoreCase("QUIT")){
 						            		type = 2;
+						            	
 						            	}
 						            	if(typeComboBox.getSelectedItem().toString().equalsIgnoreCase("STAT")){
 						            		type = 0;
 						            	}
 
 						            	writer.writeObject(new ChatMessage(type, paramTextField.getText().toString(),outgoingTextArea.getText().toString()));
-
+						            	if(type == 2){
+						            		Disconnect();
+						            		listener = false;
+						            	}
 						        	} catch (Exception ex) {
 						                System.out.println("Message was not sent. \n");
 						            }
@@ -253,13 +260,14 @@ public class ChatInterface extends JFrame {
 			@Override
 		public void run() {
 				
-				while(true){
+				while(listener){
 					try{
 						String msg = (String) breader.readObject();
 						System.out.println("Message " +msg);
-						incomingTextArea.setText(msg);
+						incomingTextArea.append(msg + "\n");
 					}
 					catch(IOException | ClassNotFoundException e){
+						System.out.println("test");
 						System.out.println(e);
 					}
 				}
@@ -272,34 +280,7 @@ public class ChatInterface extends JFrame {
 		Thread IncomingReader = new Thread(new IncomingReader());
 		IncomingReader.start();
 	}
-
-	public void userAdd(String data) {
-		userList.add(data);
-	}
-
-	public void userRemove(String data) {
-		userList.remove(data);
-	}	
-
-	public void writeUsers() throws IOException{
-		//generates online user list
-		String[] tempList = new String[(userList.size())]; 
-		userList.toArray(tempList);
-		for(String token:tempList) {
-			((Appendable) userList).append(token + "\n");
-		}
-	}
-
-	public void sendDisconnect() {
-		
-	        try{
-	            writer.writeObject(new ChatMessage(2, null, null)); // Sends server the disconnect signal.
-	            writer.flush(); // flushes the buffer
-	        } catch (Exception e) {
-	            System.out.println("Could not send Disconnect message.\n");
-	        }
-
-	      }
+	
 
     public void Disconnect() {
         try {

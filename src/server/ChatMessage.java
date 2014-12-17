@@ -22,7 +22,7 @@ public class ChatMessage implements Serializable {
 	private String message;
 	
 	// constructor
-	ChatMessage(int type, String param, String message) {
+	public ChatMessage(int type, String param, String message) {
 		this.type = type;
 		this.param = param;
 		this.message = message;

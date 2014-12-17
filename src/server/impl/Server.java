@@ -1,5 +1,6 @@
 package server.impl;
 
+
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
@@ -190,15 +191,18 @@ public class Server {
 
 				case ChatMessage.MESSAGE:
 					if(loggedIn){	
+						boolean exists = false;
 						for(ClientThread thread : al){
 							if(thread.username.equalsIgnoreCase(cm.getParam())){
 								if(thread.writeMsg(username + ": " + cm.getMessage())){
 									writeMsg("Message sent.");
+									exists = true;
+									break;
 								}
-								break;
 							}
-						}	
-						writeMsg("User: " + cm.getParam() + " does not exist.");
+						}
+						if(!exists)
+							writeMsg("User: " + cm.getParam() + " does not exist.");
 					}
 					else{
 						writeMsg("Error! User not logged in");
