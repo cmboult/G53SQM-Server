@@ -121,19 +121,6 @@ public class Server {
 		}
 	}
 
-	// for a client who logoff using the LOGOUT message
-	synchronized void remove(int id) {
-		// scan the array list until we found the Id
-		for(int i = 0; i < al.size(); ++i) {
-			ClientThread ct = al.get(i);
-			// found it
-			if(ct.id == id) {
-				al.remove(i);
-				return;
-			}
-		}
-	}
-
 	/** One instance of this thread will run for each client */
 	class ClientThread extends Thread {
 		// the socket where to listen/talk
@@ -251,7 +238,8 @@ public class Server {
 							usernameExists = true;
 					}
 					if(usernameExists){
-						writeMsg("Error! User " + cm.getParam() + " already exists.");
+						writeMsg("Error! User " + cm.getParam() + " already exists. Please try another Username.");
+						al.remove(al.size() - 1);
 					}
 					else{
 						this.loggedIn = true;
@@ -273,10 +261,10 @@ public class Server {
 			}
 			// remove client from the arrayList containing the list of the
 			// connected Clients
-			remove(id);
 			close();
 		}
 		
+		//test
 		// close everything 
 		private void close() {
 			// try to close the connection
